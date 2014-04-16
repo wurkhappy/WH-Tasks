@@ -50,6 +50,17 @@ func (t *Task) Save() (err error) {
 	return nil
 }
 
+func (t *Task) Upsert() (err error) {
+	jsonByte, _ := json.Marshal(t)
+	r, err := DB.UpsertTask.Query(t.ID, string(jsonByte))
+	r.Close()
+	if err != nil {
+		log.Print(err)
+		return err
+	}
+	return nil
+}
+
 func (t *Task) Update() (err error) {
 	jsonByte, _ := json.Marshal(t)
 	_, err = DB.UpdateTask.Exec(t.ID, string(jsonByte))

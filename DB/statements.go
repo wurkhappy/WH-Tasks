@@ -8,6 +8,7 @@ import (
 
 var SaveTask *sql.Stmt
 var UpdateTask *sql.Stmt
+var UpsertTask *sql.Stmt
 var FindTasksByVersionID *sql.Stmt
 var FindTaskByID *sql.Stmt
 
@@ -19,6 +20,11 @@ func CreateStatements() {
 	}
 
 	UpdateTask, err = DB.Prepare("UPDATE task SET data = $2 WHERE id = $1")
+	if err != nil {
+		panic(err)
+	}
+
+	UpsertTask, err = DB.Prepare("SELECT upsert_task($1, $2)")
 	if err != nil {
 		panic(err)
 	}
