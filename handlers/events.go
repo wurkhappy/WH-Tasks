@@ -1,9 +1,13 @@
 package handlers
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/streadway/amqp"
 	"github.com/wurkhappy/WH-Config"
+	"github.com/wurkhappy/WH-Tasks/models"
 	"log"
+	"net/http"
 )
 
 type Event struct {
@@ -49,14 +53,48 @@ func (e *Event) PublishOnChannel(ch *amqp.Channel) {
 }
 
 func getChannel() *amqp.Channel {
-	ch, err := connection.Channel()
+	ch, err := Connection.Channel()
 	if err != nil {
 		dialRMQ()
-		ch, err = connection.Channel()
+		ch, err = Connection.Channel()
 		if err != nil {
 			log.Print(err.Error())
 		}
 	}
 
 	return ch
+}
+
+type PaymentItem struct {
+	TaskID    string `json:"taskID"`
+	SubTaskID string `json:"subtaskID"`
+}
+
+func PaymentAccepted(params map[string]interface{}, body []byte) ([]byte, error, int) {
+	var data struct {
+		VersionID    string         `json:"versionID"`
+		UserID       string         `json:"userID"`
+		PaymentItems []*PaymentItem `json:"paymentItems"`
+	}
+	json.Unmarshal(body, &data)
+	tasks, err := models.FindTasksByVersionID(data.VersionID)
+	if err != nil {
+		return nil, fmt.Errorf("%s", "Error finding tasks"), http.StatusBadRequest
+	}
+	updateTasks := []*models.Task{}
+	for _, paymentItem := range data.PaymentItems {
+		task := tasks.GetByID(paymentItem.TaskID)
+		if paymentItem.SubTaskID == "" {
+			task.LastAction = models.PaidActionForUser(data.UserID)
+		} else {
+			subTask := task.SubTasks.GetByID(paymentItem.SubTaskID)
+			subTask.LastAction = models.PaidActionForUser(data.UserID)
+		}
+		updateTasks = append(updateTasks, task)
+	}
+	for _, task := range updateTasks {
+		task.Upsert()
+	}
+
+	return nil, nil, 200
 }

@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-func CreateTasksByVersionID(params map[string]interface{}, body []byte, userID string) ([]byte, error, int) {
+func CreateTasksByVersionID(params map[string]interface{}, body []byte) ([]byte, error, int) {
 	versionID := params["id"].(string)
 	var tasks []*models.Task
 
@@ -37,7 +37,7 @@ func CreateTasksByVersionID(params map[string]interface{}, body []byte, userID s
 
 }
 
-func GetTasksByVersionID(params map[string]interface{}, body []byte, userID string) ([]byte, error, int) {
+func GetTasksByVersionID(params map[string]interface{}, body []byte) ([]byte, error, int) {
 	id := params["id"].(string)
 	tasks, err := models.FindTasksByVersionID(id)
 	if err != nil {
@@ -48,7 +48,7 @@ func GetTasksByVersionID(params map[string]interface{}, body []byte, userID stri
 	return p, nil, http.StatusOK
 }
 
-func UpdateTask(params map[string]interface{}, body []byte, userID string) ([]byte, error, int) {
+func UpdateTask(params map[string]interface{}, body []byte) ([]byte, error, int) {
 	id := params["id"].(string)
 
 	var updatedTask *models.Task
@@ -77,6 +77,5 @@ func UpdateTask(params map[string]interface{}, body []byte, userID string) ([]by
 	}
 
 	jsonString, _ := json.Marshal(task)
-	fmt.Println(string(jsonString))
 	return jsonString, nil, http.StatusOK
 }

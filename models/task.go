@@ -15,7 +15,7 @@ type Task struct {
 	VersionID    string    `json:"versionID"`
 	IsPaid       bool      `json:"isPaid"`
 	Hours        float64   `json:"hours"`
-	SubTasks     []*Task   `json:"subTasks"`
+	SubTasks     Tasks     `json:"subTasks"`
 	Title        string    `json:"title"`
 	DateExpected time.Time `json:"dateExpected"`
 	LastAction   *Action   `json:"lastAction"`
@@ -27,11 +27,13 @@ type task struct {
 	VersionID    string    `json:"versionID"`
 	IsPaid       bool      `json:"isPaid"`
 	Hours        float64   `json:"hours"`
-	SubTasks     []*Task   `json:"subTasks"`
+	SubTasks     Tasks     `json:"subTasks"`
 	Title        string    `json:"title"`
 	DateExpected time.Time `json:"dateExpected"`
 	LastAction   *Action   `json:"lastAction"`
 }
+
+type Tasks []*Task
 
 func NewTask() *Task {
 	id, _ := uuid.NewV4()
@@ -71,7 +73,7 @@ func (t *Task) Update() (err error) {
 	return nil
 }
 
-func FindTasksByVersionID(id string) (t []*Task, err error) {
+func FindTasksByVersionID(id string) (t Tasks, err error) {
 	r, err := DB.FindTasksByVersionID.Query(id)
 	if err != nil {
 		return nil, err
@@ -90,7 +92,7 @@ func FindTaskByID(id string) (t *Task, err error) {
 	return t, nil
 }
 
-func dbRowsToTasks(r *sql.Rows) (tasks []*Task, err error) {
+func dbRowsToTasks(r *sql.Rows) (tasks Tasks, err error) {
 	for r.Next() {
 		var s string
 		err = r.Scan(&s)
@@ -123,5 +125,14 @@ func (t *Task) UnmarshalJSON(bytes []byte) (err error) {
 	t.Title = tk.Title
 	t.DateExpected = tk.DateExpected
 	t.LastAction = tk.LastAction
+	return nil
+}
+
+func (t Tasks) GetByID(id string) *Task {
+	for _, task := range t {
+		if task.ID == id {
+			return task
+		}
+	}
 	return nil
 }

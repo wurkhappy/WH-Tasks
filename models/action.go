@@ -16,6 +16,7 @@ var (
 	ActionSubmitted string = "submitted"
 	ActionCompleted string = "completed"
 	ActionAccepted  string = "accepted"
+	ActionPaid      string = "paid"
 )
 
 func CreatedActionForUser(userID string) *Action {
@@ -37,6 +38,11 @@ func CompletedActionForUser(userID string) *Action {
 func AcceptedActionForUser(userID string) *Action {
 	action := createActionForUser(userID)
 	action.Name = ActionAccepted
+	return action
+}
+func PaidActionForUser(userID string) *Action {
+	action := createActionForUser(userID)
+	action.Name = ActionPaid
 	return action
 }
 

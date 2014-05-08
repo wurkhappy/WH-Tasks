@@ -5,7 +5,7 @@ import (
 	"github.com/wurkhappy/WH-Config"
 )
 
-var connection *amqp.Connection
+var Connection *amqp.Connection
 
 func Setup() {
 	dialRMQ()
@@ -13,7 +13,7 @@ func Setup() {
 
 func dialRMQ() {
 	var err error
-	connection, err = amqp.Dial(config.RMQBroker)
+	Connection, err = amqp.Dial(config.RMQBroker)
 	if err != nil {
 		panic(err)
 	}

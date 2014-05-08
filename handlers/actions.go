@@ -8,8 +8,9 @@ import (
 	"time"
 )
 
-func UpdateAction(params map[string]interface{}, body []byte, userID string) ([]byte, error, int) {
+func UpdateAction(params map[string]interface{}, body []byte) ([]byte, error, int) {
 	id := params["id"].(string)
+	userID := params["userID"].(string)
 	var task *models.Task
 	task, err := models.FindTaskByID(id)
 	if err != nil {
