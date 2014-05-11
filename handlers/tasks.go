@@ -48,6 +48,21 @@ func GetTasksByVersionID(params map[string]interface{}, body []byte) ([]byte, er
 	return p, nil, http.StatusOK
 }
 
+func GetTasks(params map[string]interface{}, body []byte) ([]byte, error, int) {
+	var err error
+	var tasks models.Tasks
+	if _, ok := params["versionID"]; ok {
+		ids := params["versionID"].([]string)
+		tasks, err = models.TasksForIDs(ids)
+		if err != nil {
+			return nil, fmt.Errorf("Error getting tasks %s", err), http.StatusBadRequest
+		}
+	}
+
+	p, _ := json.Marshal(tasks)
+	return p, nil, http.StatusOK
+}
+
 func UpdateTask(params map[string]interface{}, body []byte) ([]byte, error, int) {
 	id := params["id"].(string)
 

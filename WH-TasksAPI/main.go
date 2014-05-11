@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"runtime"
 	"sync"
 	"syscall"
 	// "time"
@@ -61,7 +62,11 @@ func main() {
 		for i := 0; i < gophers; i++ {
 			shutChan <- true
 		}
+		close(shutChan)
+	case <-shutChan:
+		close(shutChan)
 	}
+	close(sigChan)
 	wg.Wait()
 
 	log.Println("Main", "controller.Run", "******> Shutting Down")
@@ -82,6 +87,16 @@ type ServiceReq struct {
 
 func route(worker mdp.Worker, shutChan chan bool, wg sync.WaitGroup) {
 	wg.Add(1)
+	defer func() {
+
+		if r := recover(); r != nil {
+			buf := make([]byte, 10000)
+			runtime.Stack(buf, false)
+
+			log.Printf(`{"error":"%v","trace":"%s"}`, r, string(buf))
+			shutChan <- true
+		}
+	}()
 	for reply := [][]byte{}; ; {
 		request := worker.Recv(reply, shutChan)
 		if len(request) == 0 {

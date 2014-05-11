@@ -22,6 +22,12 @@ var router urlrouter.Router = urlrouter.Router{
 			},
 		},
 		urlrouter.Route{
+			PathExp: "/tasks",
+			Dest: map[string]func(map[string]interface{}, []byte) ([]byte, error, int){
+				"GET": handlers.GetTasks,
+			},
+		},
+		urlrouter.Route{
 			PathExp: "/tasks/:id/action",
 			Dest: map[string]func(map[string]interface{}, []byte) ([]byte, error, int){
 				"POST": handlers.UpdateAction,

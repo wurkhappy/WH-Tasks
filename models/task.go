@@ -7,6 +7,7 @@ import (
 	"github.com/nu7hatch/gouuid"
 	"github.com/wurkhappy/WH-Tasks/DB"
 	"log"
+	"strconv"
 	"time"
 )
 
@@ -135,4 +136,22 @@ func (t Tasks) GetByID(id string) *Task {
 		}
 	}
 	return nil
+}
+
+func TasksForIDs(ids []string) (t Tasks, err error) {
+	var querylist string
+	interfaceIDs := make([]interface{}, len(ids))
+	for i, id := range ids {
+		querylist += "data->>'versionID' = $" + strconv.Itoa(i+1)
+		if i+1 != len(ids) {
+			querylist += " OR "
+		}
+		interfaceIDs[i] = interface{}(id)
+	}
+	rows, err := DB.DB.Query("SELECT data FROM task WHERE "+querylist, interfaceIDs...)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+	return dbRowsToTasks(rows)
 }
