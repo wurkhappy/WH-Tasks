@@ -86,6 +86,9 @@ func PaymentAccepted(params map[string]interface{}, body []byte) ([]byte, error,
 		task := tasks.GetByID(paymentItem.TaskID)
 		if paymentItem.SubTaskID == "" {
 			task.LastAction = models.PaidActionForUser(data.UserID)
+			for _, subTask := range task.SubTasks {
+				subTask.LastAction = models.PaidActionForUser(data.UserID)
+			}
 		} else {
 			subTask := task.SubTasks.GetByID(paymentItem.SubTaskID)
 			subTask.LastAction = models.PaidActionForUser(data.UserID)
