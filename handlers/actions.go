@@ -27,6 +27,11 @@ func UpdateAction(params map[string]interface{}, body []byte) ([]byte, error, in
 	}
 
 	task.Update()
+	if task.LastAction != nil {
+		t, _ := json.Marshal(task)
+		events := Events{&Event{"task." + task.LastAction.Name, t}}
+		go events.Publish()
+	}
 
 	a, _ := json.Marshal(action)
 	return a, nil, http.StatusOK

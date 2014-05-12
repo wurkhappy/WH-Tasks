@@ -1,0 +1,103 @@
+package main
+
+import (
+	"flag"
+	"fmt"
+	"github.com/streadway/amqp"
+	"github.com/wurkhappy/WH-Config"
+	"log"
+)
+
+var conn *amqp.Connection
+
+var production = flag.Bool("production", false, "Production settings")
+
+func failOnError(err error, msg string) {
+	if err != nil {
+		log.Fatalf("%s: %s", msg, err)
+		panic(fmt.Sprintf("%s: %s", msg, err))
+	}
+}
+
+func main() {
+	var err error
+
+	flag.Parse()
+	if *production {
+		config.Prod()
+	} else {
+		config.Test()
+	}
+	setupRedis()
+
+	err = router.Start()
+	if err != nil {
+		panic(err)
+	}
+
+	conn, err = amqp.Dial("amqp://guest:guest@localhost:5672/")
+	failOnError(err, "Failed to connect to RabbitMQ")
+	defer conn.Close()
+
+	ch, err := conn.Channel()
+	failOnError(err, "Failed to open a channel")
+	defer ch.Close()
+
+	err = ch.ExchangeDeclare(
+		config.MainExchange, // name
+		"topic",             // type
+		true,                // durable
+		false,               // auto-deleted
+		false,               // internal
+		false,               // noWait
+		nil,                 // arguments
+	)
+	failOnError(err, "Failed to declare an exchange")
+	q, err := ch.QueueDeclare(
+		config.TasksService, // name
+		false,               // durable
+		false,               // delete when usused
+		false,               // exclusive
+		false,               // noWait
+		amqp.Table{
+			"x-dead-letter-exchange": config.DeadLetterExchange,
+		}, // arguments
+	)
+	failOnError(err, "Failed to declare a queue")
+
+	for _, route := range router.Routes {
+		err = ch.QueueBind(
+			q.Name,              // queue name
+			route.PathExp,       // routing key
+			config.MainExchange, // exchange
+			false,
+			nil)
+		failOnError(err, "Failed to bind a queue")
+	}
+
+	msgs, err := ch.Consume(q.Name, "", false, false, false, false, nil)
+	for d := range msgs {
+		routeDelivery(d)
+	}
+}
+
+func routeDelivery(d amqp.Delivery) {
+	route, _, err := router.FindRoute(d.RoutingKey)
+	if err != nil || route == nil {
+		log.Printf("ERROR is: %v", err)
+		d.Nack(false, false)
+		return
+	}
+
+	params := make(map[string]interface{})
+	log.Println(d.RoutingKey, string(d.Body))
+
+	handler := route.Dest.(func(map[string]interface{}, []byte) ([]byte, error, int))
+	_, err, _ = handler(params, d.Body)
+	if err != nil {
+		log.Printf("ERROR is: %v", err)
+		d.Nack(false, false)
+		return
+	}
+	d.Ack(false)
+}

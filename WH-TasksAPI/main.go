@@ -33,6 +33,9 @@ func main() {
 	router.Start()
 
 	gophers := 10
+	if !*production {
+		gophers = 2
+	}
 
 	// Create a channel to talk with the OS
 	sigChan := make(chan os.Signal, 1)

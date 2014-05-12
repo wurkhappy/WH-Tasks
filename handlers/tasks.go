@@ -22,6 +22,7 @@ func CreateTasksByVersionID(params map[string]interface{}, body []byte) ([]byte,
 		//TODO: this should really be a transaction
 		//because if one save goes bad and others have already been saved then it could
 		//lead to weird zombie tasks
+		//Actually I should build a dynamic query with this like I do with model.TasksForIDs
 		err = task.Upsert()
 		if err != nil {
 			return nil, fmt.Errorf("%s %s", "Error saving: ", err.Error()), http.StatusBadRequest
@@ -30,7 +31,7 @@ func CreateTasksByVersionID(params map[string]interface{}, body []byte) ([]byte,
 
 	a, _ := json.Marshal(tasks)
 
-	events := Events{&Event{"created.task", a}}
+	events := Events{&Event{"tasks.created", a}}
 	go events.Publish()
 
 	return a, nil, http.StatusOK
@@ -74,6 +75,16 @@ func UpdateTask(params map[string]interface{}, body []byte) ([]byte, error, int)
 		return nil, fmt.Errorf("%s", "Error finding task"), http.StatusBadRequest
 	}
 
+	var updatedSubTasks models.Tasks
+	for _, newSubTask := range updatedTask.SubTasks {
+		oldSubTask := task.SubTasks.GetByID(newSubTask.ID)
+		if (oldSubTask.LastAction != nil && newSubTask.LastAction == nil) ||
+			(oldSubTask.LastAction == nil && newSubTask.LastAction != nil) ||
+			(oldSubTask.LastAction != nil && newSubTask.LastAction != nil && oldSubTask.LastAction.Name != newSubTask.LastAction.Name) {
+			updatedSubTasks = append(updatedSubTasks, newSubTask)
+		}
+	}
+
 	task.SubTasks = updatedTask.SubTasks
 
 	var subTasksComplete bool = true
@@ -90,6 +101,15 @@ func UpdateTask(params map[string]interface{}, body []byte) ([]byte, error, int)
 	if err != nil {
 		return nil, fmt.Errorf("%s %s", "Error saving: ", err.Error()), http.StatusBadRequest
 	}
+
+	m := map[string]interface{}{
+		"versionID": task.VersionID,
+		"taskID":    task.ID,
+		"subTasks":  updatedSubTasks,
+	}
+	jsonSubTasks, _ := json.Marshal(m)
+	events := Events{&Event{"task.subTasks.updated", jsonSubTasks}}
+	go events.Publish()
 
 	jsonString, _ := json.Marshal(task)
 	return jsonString, nil, http.StatusOK
