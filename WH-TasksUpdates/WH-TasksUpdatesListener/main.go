@@ -54,11 +54,11 @@ func main() {
 	)
 	failOnError(err, "Failed to declare an exchange")
 	q, err := ch.QueueDeclare(
-		config.TasksService, // name
-		false,               // durable
-		false,               // delete when usused
-		false,               // exclusive
-		false,               // noWait
+		"TaskUpdates", // name
+		false,         // durable
+		false,         // delete when usused
+		false,         // exclusive
+		false,         // noWait
 		amqp.Table{
 			"x-dead-letter-exchange": config.DeadLetterExchange,
 		}, // arguments

@@ -12,7 +12,11 @@ var router urlrouter.Router = urlrouter.Router{
 		},
 		urlrouter.Route{
 			PathExp: "task.subTasks.updated",
-			Dest:    UpdateSubTask,
+			Dest:    UpdateSubTasks,
+		},
+		urlrouter.Route{
+			PathExp: "payment.submitted",
+			Dest:    CheckPayment,
 		},
 	},
 }
