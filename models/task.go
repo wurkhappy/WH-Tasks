@@ -18,7 +18,8 @@ type Task struct {
 	Hours        float64   `json:"hours"`
 	SubTasks     Tasks     `json:"subTasks"`
 	Title        string    `json:"title"`
-	DateExpected time.Time `json:"dateExpected"`
+	Index        int64     `json:"index"`
+	DateExpected time.Time `json:"dateExpected,omitempty"`
 	LastAction   *Action   `json:"lastAction"`
 }
 
@@ -30,6 +31,7 @@ type task struct {
 	Hours        float64   `json:"hours"`
 	SubTasks     Tasks     `json:"subTasks"`
 	Title        string    `json:"title"`
+	Index        int64     `json:"index"`
 	DateExpected time.Time `json:"dateExpected"`
 	LastAction   *Action   `json:"lastAction"`
 }
@@ -124,6 +126,7 @@ func (t *Task) UnmarshalJSON(bytes []byte) (err error) {
 	t.Hours = tk.Hours
 	t.SubTasks = tk.SubTasks
 	t.Title = tk.Title
+	t.Index = tk.Index
 	t.DateExpected = tk.DateExpected
 	t.LastAction = tk.LastAction
 	return nil
